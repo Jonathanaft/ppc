@@ -27,8 +27,8 @@
     #terminal {
       padding: 1em;
       white-space: pre-wrap;
-      background: black; /* Ensure terminal background is black */
-      color: lime; /* Ensure terminal text is green */
+      background: black;
+      color: lime;
     }
     input {
       background: black;
@@ -144,6 +144,7 @@
       case "numquestppc":
         hideAll();
         document.getElementById("numquest").style.display = "block";
+        document.getElementById("difficulty").focus();
         break;
       case "baseprogram":
         hideAll();
@@ -209,7 +210,14 @@
     document.getElementById("gameOutput").innerText = `Guess a number between 1 and ${maxNum}`;
     document.getElementById("guess").style.display = "inline";
     document.getElementById("guessBtn").style.display = "inline";
+    document.getElementById("guess").focus();
   }
+
+  document.getElementById("difficulty").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+      startGame();
+    }
+  });
 
   function checkGuess() {
     const guess = parseInt(document.getElementById("guess").value);

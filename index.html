@@ -10,7 +10,7 @@
       background: black;
       color: lime;
     }
-    #boot, #terminal, #objmove, #numquest, #baseprogram {
+    #boot, #terminal, #objmove, #baseprogram {
       display: none;
       height: 100vh;
       width: 100vw;
@@ -46,7 +46,7 @@
       border: 2px solid black;
       cursor: move;
     }
-    #objmove, #numquest {
+    #objmove, #baseprogram {
       background: white;
       color: black;
       padding: 1em;
@@ -71,22 +71,11 @@
   <div>> Welcome to PPC-OS</div>
   <div>> Type a command:</div>
   <div id="output"></div>
-  <input id="cmdInput" autofocus>
+  <input id="cmdInput" autofocus autocomplete="off" />
 </div>
 
 <div id="objmove">
   <div class="draggable" id="cube" style="top:100px;left:100px;"></div>
-</div>
-
-<div id="numquest">
-  <div>
-    <p>Choose difficulty: easy (1-10), normal (1-15), hard (1-20)</p>
-    <input id="difficulty" placeholder="easy, normal, hard">
-    <button onclick="startGame()">Start</button>
-    <div id="gameOutput"></div>
-    <input id="guess" placeholder="Your guess" style="display:none">
-    <button onclick="checkGuess()" style="display:none" id="guessBtn">Guess</button>
-  </div>
 </div>
 
 <div id="baseprogram">
@@ -95,6 +84,11 @@
 </div>
 
 <script>
+  let inNumQuest = false;      // Are we inside number guessing game?
+  let numQuestStage = 0;       // 0 = waiting for difficulty, 1 = guessing
+  let targetNumber = 0;
+  let maxNum = 0;
+
   window.onload = function () {
     const bootDiv = document.getElementById("boot");
     const img = new Image();
@@ -111,14 +105,14 @@
       input.focus();
 
       output.innerHTML += "\n> Type 'help' for a list of commands.";
-      handleCommand("help");
 
       input.addEventListener("keydown", function (e) {
         if (e.key === "Enter") {
-          const command = input.value.trim().toLowerCase();
+          const command = input.value.trim();
           output.innerHTML += "\n> " + command;
-          handleCommand(command);
+          processInput(command.toLowerCase());
           input.value = "";
+          output.scrollTop = output.scrollHeight;
         }
       });
     }
@@ -130,22 +124,67 @@
     img.onerror = showTerminal;
   };
 
-  function handleCommand(cmd) {
+  function processInput(input) {
     const output = document.getElementById("output");
-    switch (cmd) {
+
+    // If inside number guessing game
+    if (inNumQuest) {
+      if (numQuestStage === 0) {
+        // Waiting for difficulty
+        if (["easy", "normal", "hard"].includes(input)) {
+          if (input === "easy") maxNum = 10;
+          else if (input === "normal") maxNum = 15;
+          else maxNum = 20;
+
+          targetNumber = Math.floor(Math.random() * maxNum) + 1;
+          output.innerHTML += `\nGuess a number between 1 and ${maxNum}. Type your guess and press Enter.`;
+          numQuestStage = 1;
+        } else {
+          output.innerHTML += "\nInvalid difficulty! Choose easy, normal, or hard.";
+        }
+        return;
+      }
+
+      if (numQuestStage === 1) {
+        // Guessing stage
+        const guess = parseInt(input);
+        if (isNaN(guess)) {
+          output.innerHTML += "\nPlease enter a valid number.";
+          return;
+        }
+        if (guess === targetNumber) {
+          output.innerHTML += "\nCorrect! You win! Type 'exit' to quit the game.";
+        } else if (guess < targetNumber) {
+          output.innerHTML += "\nToo low. Try again.";
+        } else {
+          output.innerHTML += "\nToo high. Try again.";
+        }
+        return;
+      }
+    }
+
+    // Not in number guessing game — normal commands
+    switch (input) {
       case "help":
-        output.innerHTML += "\nAvailable commands:\n- objmove: Drag the white cube\n- numquestppc: Play the number guessing game\n- baseprogram: Open the HTML editor\n- help: Show this help message";
+        output.innerHTML +=
+          "\nAvailable commands:\n- objmove: Drag the white cube\n- numquestppc: Play the number guessing game\n- baseprogram: Open the HTML editor\n- help: Show this help message";
         break;
+
       case "objmove":
         hideAll();
         document.getElementById("objmove").style.display = "block";
         makeDraggable(document.getElementById("cube"));
         break;
+
       case "numquestppc":
         hideAll();
-        document.getElementById("numquest").style.display = "block";
-        document.getElementById("difficulty").focus();
+        document.getElementById("terminal").style.display = "block";
+        inNumQuest = true;
+        numQuestStage = 0;
+        output.innerHTML += "\nStarting number guessing game!";
+        output.innerHTML += "\nChoose difficulty: easy, normal, hard";
         break;
+
       case "baseprogram":
         hideAll();
         document.getElementById("baseprogram").style.display = "block";
@@ -154,15 +193,25 @@
           document.getElementById("preview").srcdoc = code;
         });
         break;
+
+      case "exit":
+        if (inNumQuest) {
+          inNumQuest = false;
+          numQuestStage = 0;
+          output.innerHTML += "\nExited number guessing game.";
+        } else {
+          output.innerHTML += "\nNothing to exit.";
+        }
+        break;
+
       default:
-        output.innerHTML += "\n> Unknown command.";
+        output.innerHTML += "\nUnknown command.";
     }
   }
 
   function hideAll() {
     document.getElementById("terminal").style.display = "none";
     document.getElementById("objmove").style.display = "none";
-    document.getElementById("numquest").style.display = "none";
     document.getElementById("baseprogram").style.display = "none";
   }
 
@@ -193,40 +242,6 @@
     function closeDragElement() {
       document.onmouseup = null;
       document.onmousemove = null;
-    }
-  }
-
-  let targetNumber, maxNum;
-  function startGame() {
-    const diff = document.getElementById("difficulty").value.toLowerCase();
-    if (diff === "easy") maxNum = 10;
-    else if (diff === "normal") maxNum = 15;
-    else if (diff === "hard") maxNum = 20;
-    else {
-      document.getElementById("gameOutput").innerText = "Invalid difficulty.";
-      return;
-    }
-    targetNumber = Math.floor(Math.random() * maxNum) + 1;
-    document.getElementById("gameOutput").innerText = `Guess a number between 1 and ${maxNum}`;
-    document.getElementById("guess").style.display = "inline";
-    document.getElementById("guessBtn").style.display = "inline";
-    document.getElementById("guess").focus();
-  }
-
-  document.getElementById("difficulty").addEventListener("keydown", function(e) {
-    if (e.key === "Enter") {
-      startGame();
-    }
-  });
-
-  function checkGuess() {
-    const guess = parseInt(document.getElementById("guess").value);
-    if (guess === targetNumber) {
-      document.getElementById("gameOutput").innerText = "Correct! You win!";
-    } else if (guess < targetNumber) {
-      document.getElementById("gameOutput").innerText = "Too low. Try again.";
-    } else {
-      document.getElementById("gameOutput").innerText = "Too high. Try again.";
     }
   }
 </script>

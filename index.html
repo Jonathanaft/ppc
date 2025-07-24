@@ -110,6 +110,9 @@
       const output = document.getElementById("output");
       input.focus();
 
+      output.innerHTML += "\n> Type 'help' for a list of commands.";
+      handleCommand("help");
+
       input.addEventListener("keydown", function (e) {
         if (e.key === "Enter") {
           const command = input.value.trim().toLowerCase();
@@ -128,7 +131,11 @@
   };
 
   function handleCommand(cmd) {
+    const output = document.getElementById("output");
     switch (cmd) {
+      case "help":
+        output.innerHTML += "\nAvailable commands:\n- objmove: Drag the white cube\n- numquestppc: Play the number guessing game\n- baseprogram: Open the HTML editor\n- help: Show this help message";
+        break;
       case "objmove":
         hideAll();
         document.getElementById("objmove").style.display = "block";
@@ -147,7 +154,6 @@
         });
         break;
       default:
-        const output = document.getElementById("output");
         output.innerHTML += "\n> Unknown command.";
     }
   }

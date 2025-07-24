@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>PPC-OS</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: monospace;
+      background: black;
+      color: lime;
+    }
+    #boot, #terminal, #objmove, #numquest, #baseprogram {
+      display: none;
+      height: 100vh;
+      width: 100vw;
+    }
+    #boot {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: white;
+    }
+    #boot img {
+      width: 400px;
+    }
+    #terminal {
+      padding: 1em;
+      white-space: pre-wrap;
+      background: black; /* Ensure terminal background is black */
+      color: lime; /* Ensure terminal text is green */
+    }
+    input {
+      background: black;
+      border: none;
+      color: lime;
+      font-family: monospace;
+      font-size: 1em;
+      width: 90%;
+    }
+    .draggable {
+      position: absolute;
+      width: 100px;
+      height: 100px;
+      background: white;
+      border: 2px solid black;
+      cursor: move;
+    }
+    #objmove, #numquest {
+      background: white;
+      color: black;
+      padding: 1em;
+    }
+    #baseprogram textarea {
+      width: 100%;
+      height: 40vh;
+      font-family: monospace;
+    }
+    #baseprogram iframe {
+      width: 100%;
+      height: 50vh;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+
+<div id="boot"></div>
+
+<div id="terminal">
+  <div>> Welcome to PPC-OS</div>
+  <div>> Type a command:</div>
+  <div id="output"></div>
+  <input id="cmdInput" autofocus>
+</div>
+
+<div id="objmove">
+  <div class="draggable" id="cube" style="top:100px;left:100px;"></div>
+</div>
+
+<div id="numquest">
+  <div>
+    <p>Choose difficulty: easy (1-10), normal (1-15), hard (1-20)</p>
+    <input id="difficulty" placeholder="easy, normal, hard">
+    <button onclick="startGame()">Start</button>
+    <div id="gameOutput"></div>
+    <input id="guess" placeholder="Your guess" style="display:none">
+    <button onclick="checkGuess()" style="display:none" id="guessBtn">Guess</button>
+  </div>
+</div>
+
+<div id="baseprogram">
+  <textarea id="htmlcode" placeholder="Write HTML here..."></textarea>
+  <iframe id="preview"></iframe>
+</div>
+
+<script>
+  window.onload = function () {
+    const bootDiv = document.getElementById("boot");
+    const img = new Image();
+    img.src = "intro.png";
+    img.alt = "Intro Image";
+    img.style.width = "400px";
+
+    function showTerminal() {
+      bootDiv.style.display = "none";
+      const terminal = document.getElementById("terminal");
+      terminal.style.display = "block";
+      const input = document.getElementById("cmdInput");
+      const output = document.getElementById("output");
+      input.focus();
+
+      input.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          const command = input.value.trim().toLowerCase();
+          output.innerHTML += "\n> " + command;
+          handleCommand(command);
+          input.value = "";
+        }
+      });
+    }
+
+    img.onload = function () {
+      bootDiv.appendChild(img);
+      setTimeout(showTerminal, 2000);
+    };
+    img.onerror = showTerminal;
+  };
+
+  function handleCommand(cmd) {
+    switch (cmd) {
+      case "objmove":
+        hideAll();
+        document.getElementById("objmove").style.display = "block";
+        makeDraggable(document.getElementById("cube"));
+        break;
+      case "numquestppc":
+        hideAll();
+        document.getElementById("numquest").style.display = "block";
+        break;
+      case "baseprogram":
+        hideAll();
+        document.getElementById("baseprogram").style.display = "block";
+        document.getElementById("htmlcode").addEventListener("input", function () {
+          const code = document.getElementById("htmlcode").value;
+          document.getElementById("preview").srcdoc = code;
+        });
+        break;
+      default:
+        const output = document.getElementById("output");
+        output.innerHTML += "\n> Unknown command.";
+    }
+  }
+
+  function hideAll() {
+    document.getElementById("terminal").style.display = "none";
+    document.getElementById("objmove").style.display = "none";
+    document.getElementById("numquest").style.display = "none";
+    document.getElementById("baseprogram").style.display = "none";
+  }
+
+  function makeDraggable(elmnt) {
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    elmnt.onmousedown = dragMouseDown;
+
+    function dragMouseDown(e) {
+      e = e || window.event;
+      e.preventDefault();
+      pos3 = e.clientX;
+      pos4 = e.clientY;
+      document.onmouseup = closeDragElement;
+      document.onmousemove = elementDrag;
+    }
+
+    function elementDrag(e) {
+      e = e || window.event;
+      e.preventDefault();
+      pos1 = pos3 - e.clientX;
+      pos2 = pos4 - e.clientY;
+      pos3 = e.clientX;
+      pos4 = e.clientY;
+      elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+      elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+    }
+
+    function closeDragElement() {
+      document.onmouseup = null;
+      document.onmousemove = null;
+    }
+  }
+
+  let targetNumber, maxNum;
+  function startGame() {
+    const diff = document.getElementById("difficulty").value.toLowerCase();
+    if (diff === "easy") maxNum = 10;
+    else if (diff === "normal") maxNum = 15;
+    else if (diff === "hard") maxNum = 20;
+    else {
+      document.getElementById("gameOutput").innerText = "Invalid difficulty.";
+      return;
+    }
+    targetNumber = Math.floor(Math.random() * maxNum) + 1;
+    document.getElementById("gameOutput").innerText = `Guess a number between 1 and ${maxNum}`;
+    document.getElementById("guess").style.display = "inline";
+    document.getElementById("guessBtn").style.display = "inline";
+  }
+
+  function checkGuess() {
+    const guess = parseInt(document.getElementById("guess").value);
+    if (guess === targetNumber) {
+      document.getElementById("gameOutput").innerText = "Correct! You win!";
+    } else if (guess < targetNumber) {
+      document.getElementById("gameOutput").innerText = "Too low. Try again.";
+    } else {
+      document.getElementById("gameOutput").innerText = "Too high. Try again.";
+    }
+  }
+</script>
+
+</body>
+</html>
